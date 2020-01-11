@@ -51,6 +51,7 @@ ax2.plot(log_list_dt, log_max_difference_euler)
 ax2.set_title("Illustration de la convergence à l'ordre 1 du schéma d'Euler")
 ax2.set(xlabel = 'log10(dt), avec dt le pas de résolution', ylabel = \
     'log10(max écarts à la solution réelle)')
+plt.grid(True)
 plt.show()
 
 def solve_runge_kutta_ordre_2(f, x0, dt, tf, t0=0):
@@ -106,4 +107,42 @@ ax2.set_title("Comparaison des ordres de convergence de deux schémas")
 ax2.set(xlabel = 'log10(dt), avec dt le pas de résolution', ylabel = \
     'log10(max écarts à la solution réelle)')
 ax2.legend()
+plt.grid(True)
+plt.show()
+
+def solve_ivp_euler_explicit_variable_step(f, t0, x0, t_f, dtmin=1e-16, dtmax=0.01, atol=1e-6):
+    dt = dtmax/10 # initial integration step
+    list_dt, list_errors = [], []
+    ts, xs = [t0], [x0]  # storage variables
+    t = t0
+    ti = 0  # internal time keeping track of time since latest storage point : must remain below dtmax
+    x = x0
+    while ts[-1] < t_f:
+        while ti < dtmax:
+            t_next, ti_next, x_next = t + dt, ti + dt, x + dt * f(x)
+            x_back = x_next - dt * f(x_next)
+            ratio_abs_error = atol / (np.linalg.norm(x_back-x)/2)
+            dt = 0.9 * dt * math.sqrt(ratio_abs_error)
+            if dt < dtmin:
+                raise ValueError("Time step below minimum")
+            elif dt > dtmax/2:
+                dt = dtmax/2
+            list_errors.append(atol/ratio_abs_error)
+            list_dt.append(dt)
+            t, ti, x = t_next, ti_next, x_next
+        dt2DT = dtmax - ti # time left to dtmax
+        t_next, ti_next, x_next = t + dt2DT, 0, x + dt2DT * f(x)
+        ts.append(t_next)
+        xs.append(x_next)
+        t, ti, x = t_next, ti_next, x_next
+    return ts, xs, list_dt, list_errors
+
+omega = 1
+def g(X):
+    x, y = X
+    return np.array([y, -(omega**2)*x])
+t0, tf, x0 = 0, np.pi/2, np.array([0.0, 1.0/omega])
+t, x, list_dt, list_errors = solve_ivp_euler_explicit_variable_step(g, t0, x0, tf)
+plt.plot(t, list_dt, label = "dt")
+plt.plot(t, list_errors, label = "errors")
 plt.show()
