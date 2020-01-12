@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 
+
 def solve_euler_explicit(f, x0, dt, tf, t0=0):
     '''Résout l'équation différentielle dx/dt(t) = f(t, x) à l'aide de la
     méthode d'Euler explicite. Renvoie les listes temps et solution.'''
@@ -132,17 +133,24 @@ def solve_ivp_euler_explicit_variable_step(f, t0, x0, t_f, dtmin=1e-16, dtmax=0.
             t, ti, x = t_next, ti_next, x_next
         dt2DT = dtmax - ti # time left to dtmax
         t_next, ti_next, x_next = t + dt2DT, 0, x + dt2DT * f(x)
-        ts.append(t_next)
-        xs.append(x_next)
+        ts = np.vstack([ts, t_next])
+        xs = np.vstack([xs, x_next])
         t, ti, x = t_next, ti_next, x_next
     return ts, xs, list_dt, list_errors
 
-omega = 1
-def g(X):
-    x, y = X
-    return np.array([y, -(omega**2)*x])
-t0, tf, x0 = 0, np.pi/2, np.array([0.0, 1.0/omega])
-t, x, list_dt, list_errors = solve_ivp_euler_explicit_variable_step(g, t0, x0, tf)
-plt.plot(t, list_dt, label = "dt")
-plt.plot(t, list_errors, label = "errors")
+
+
+
+g = lambda x : x # f ne dépendant pas de t
+fig, ax1 = plt.subplots()
+t, x, list_dt, list_errors = solve_ivp_euler_explicit_variable_step(g, 0, 1, 10)
+color = 'tab:blue'
+ax1.set_xlabel('itérations')
+ax1.set_ylabel('erreurs', color=color)
+ax1.plot(list_errors[1:], color=color)
+color = 'tab:red'
+ax2 = ax1.twinx()
+ax2.plot(list_dt, color=color, linewidth=2.0)
+ax2.set_ylabel('dt', color=color)
+fig.tight_layout()
 plt.show()
